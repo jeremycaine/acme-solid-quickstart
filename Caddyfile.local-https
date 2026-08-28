@@ -1,0 +1,11 @@
+{
+    local_certs
+}
+
+solid.localhost {
+    reverse_proxy acme-solid:3000
+}
+
+idp.localhost {
+    reverse_proxy acme-idp:4000
+}

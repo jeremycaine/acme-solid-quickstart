@@ -1,0 +1,28 @@
+# Local HTTPS overlay — optional. Uses Caddy's own internal CA, not mkcert.
+#
+# One-time setup:
+#   1. Add to /etc/hosts:  127.0.0.1 solid.localhost idp.localhost
+#   2. Install Caddy locally and run:  caddy trust
+#
+# Run:
+#   podman compose --profile https -f docker-compose.yml -f docker-compose.local-https.yml up -d
+#
+# Note: this changes the issuer/base URL from "server" to "idp.localhost" /
+# "solid.localhost". If you already created an account under the HTTP-only
+# "server" issuer, its WebID (http://server:4000/users/<name>#me) will NOT
+# match this new issuer — re-run create-account (or reset
+# SERVER_OWNER_WEBID) after switching.
+
+services:
+  acme-idp:
+    ports: []
+    environment:
+      ISSUER: https://idp.localhost
+      RESOURCE_SERVER_URL: https://solid.localhost
+
+  acme-solid:
+    ports: []
+    environment:
+      BASE_URL: https://solid.localhost
+      TRUSTED_ISSUERS: https://idp.localhost
+      SERVER_OWNER_WEBID: ${SERVER_OWNER_WEBID:-}
