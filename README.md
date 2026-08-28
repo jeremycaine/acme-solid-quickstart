@@ -1,9 +1,8 @@
 # acme-solid quickstart
 
-Run [acme-solid](https://github.com/jeremycaine/acme-solid) — a Solid protocol pod server —
-locally with `podman compose`, using your own WebID.
+Guide to run a W3C Solid protocol server called. `acme-solid`. 
 
-This repo has no source code. It pulls pre-built container images and runs them.
+`acme-solid` is a lean server written in Rust using S3 storage. You can run it locally with `podman compose`, using your own WebID. It pulls pre-built container images and runs them.
 
 ## 1. Get access
 
@@ -35,8 +34,7 @@ echo "127.0.0.1 server" | sudo tee -a /etc/hosts
 
 ## 4. Start the stack
 
-Using a WebID you already have from another Solid IDP instead of the bundled one? Skip ahead to
-section 6 instead of continuing with sections 4-5.
+If you are using a WebID you from another Solid IDP then skip to section 6.
 
 ```bash
 git clone https://github.com/jeremycaine/acme-solid-quickstart.git
@@ -148,7 +146,4 @@ you also set `SERVER_OWNER_WEBID` to one of their WebIDs.
 podman compose down -v
 ```
 
-## What this is
 
-`acme-solid` is a lean, S3-backed [W3C Solid](https://solidproject.org/) server. See the
-[main project](https://github.com/jeremycaine/acme-solid) for architecture and protocol details.
