@@ -9,10 +9,6 @@ services:
   seaweedfs:
     image: chrislusf/seaweedfs:latest
     command: server -s3 -s3.port=8333 -dir=/data -master.volumeSizeLimitMB=100
-    ports:
-      - "9333:9333"
-      - "8080:8080"
-      - "8333:8333"
     volumes:
       - seaweedfs_data:/data
     healthcheck:
@@ -21,8 +17,6 @@ services:
   valkey:
     image: valkey/valkey:8-alpine
     command: ["valkey-server", "--save", "", "--appendonly", "no"]
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -35,8 +29,6 @@ services:
       POSTGRES_DB: acme_idp
       POSTGRES_USER: acme
       POSTGRES_PASSWORD: acme
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
