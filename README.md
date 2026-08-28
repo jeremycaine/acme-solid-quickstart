@@ -73,9 +73,9 @@ Make it the pod owner — edit `.env`:
 SERVER_OWNER_WEBID=http://server:4000/users/alice#me
 ```
 
-Then restart `acme-solid` so it re-syncs the root access grant:
+Then recreate `acme-solid` so it picks up the new value and re-syncs the root access grant (`podman compose restart` does NOT pick up an `.env` change — it restarts the existing container with its already-baked-in environment; `up -d` recreates the container when its config differs):
 ```bash
-podman compose restart acme-solid
+podman compose up -d acme-solid
 ```
 
 You (and only you, via that WebID) now have full Read/Write/Control access to this pod. Point
@@ -99,7 +99,7 @@ SERVER_OWNER_WEBID=https://your-external-idp.example/profile/card#me
 
 Then:
 ```bash
-podman compose restart acme-solid
+podman compose up -d acme-solid
 ```
 
 ## 7. Optional: add HTTPS
