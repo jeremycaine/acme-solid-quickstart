@@ -15,13 +15,13 @@
 
 services:
   acme-idp:
-    ports: []
+    ports: !reset []
     environment:
       ISSUER: https://idp.localhost
       RESOURCE_SERVER_URL: https://solid.localhost
 
   acme-solid:
-    ports: []
+    ports: !reset []
     environment:
       BASE_URL: https://solid.localhost
       TRUSTED_ISSUERS: https://idp.localhost
