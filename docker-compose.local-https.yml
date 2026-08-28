@@ -12,6 +12,14 @@
 # "server" issuer, its WebID (http://server:4000/users/<name>#me) will NOT
 # match this new issuer — re-run create-account (or reset
 # SERVER_OWNER_WEBID) after switching.
+#
+# EXPERIMENTAL / UNVALIDATED: this overlay has not been confirmed to support
+# authenticated requests. Health checks and unauthenticated reads should
+# work, but acme-solid fetches the issuer's OIDC config/JWKS server-side
+# from inside its own container, and nothing here gives caddy a network
+# alias for idp.localhost/solid.localhost, nor puts Caddy's internal CA
+# into acme-solid's TLS trust store. The authenticated flow may fail with
+# no obvious cause until that's addressed.
 
 services:
   acme-idp:

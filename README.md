@@ -35,6 +35,9 @@ echo "127.0.0.1 server" | sudo tee -a /etc/hosts
 
 ## 4. Start the stack
 
+Using a WebID you already have from another Solid IDP instead of the bundled one? Skip ahead to
+section 6 instead of continuing with sections 4-5.
+
 ```bash
 git clone https://github.com/jeremycaine/acme-solid-quickstart.git
 cd acme-solid-quickstart
@@ -63,14 +66,14 @@ curl http://server:4000/health        # → ok
 ## 5. Create your own account/WebID
 
 ```bash
-podman compose exec acme-idp node dist/create-account.js alice alice@example.com my-secret-password
+podman compose exec acme-idp node dist/create-account.js yourname yourname@example.com my-secret-password
 ```
 
-This prints your new WebID, e.g. `http://server:4000/users/alice#me`.
+This prints your new WebID, e.g. `http://server:4000/users/yourname#me`.
 
 Make it the pod owner — edit `.env`:
 ```
-SERVER_OWNER_WEBID=http://server:4000/users/alice#me
+SERVER_OWNER_WEBID=http://server:4000/users/yourname#me
 ```
 
 Then recreate `acme-solid` so it picks up the new value and re-syncs the root access grant (`podman compose restart` does NOT pick up an `.env` change — it restarts the existing container with its already-baked-in environment; `up -d` recreates the container when its config differs):
@@ -104,15 +107,46 @@ podman compose up -d acme-solid
 
 ## 7. Optional: add HTTPS
 
-See `docker-compose.local-https.yml` for a Caddy-based local-HTTPS overlay (no mkcert required).
+See `docker-compose.local-https.yml` for a Caddy-based local-HTTPS overlay (no mkcert required,
+but a local [Caddy](https://caddyserver.com/docs/install) install — not just Podman — is needed
+for the `caddy trust` step below).
 Note: switching to HTTPS changes the issuer/base URL, so redo step 5 under the new URLs if you
 already created an account over HTTP.
+
+**Note:** this overlay hasn't been validated for authenticated requests — health checks and
+unauthenticated reads should work, but the Solid client authentication flow may not complete
+over this local-HTTPS setup without further network/TLS-trust configuration. Treat this as
+experimental.
+
+One-time setup:
+
+```bash
+echo "127.0.0.1 solid.localhost idp.localhost" | sudo tee -a /etc/hosts
+```
+
+Install Caddy locally and trust its local CA:
+
+```bash
+caddy trust
+```
+
+Run:
+
+```bash
+podman compose --profile https -f docker-compose.yml -f docker-compose.local-https.yml up -d
+```
 
 ## Demo accounts (optional, for a fast smoke test)
 
 Set `SEED_TEST_ACCOUNTS=true` in `.env` before first `podman compose up -d` to get pre-seeded
 `alice`/`bob` accounts. These are for a quick look around only — they don't own the pod unless
 you also set `SERVER_OWNER_WEBID` to one of their WebIDs.
+
+## Stopping the stack
+
+```bash
+podman compose down -v
+```
 
 ## What this is
 
