@@ -1,0 +1,118 @@
+# acme-solid quickstart — pulls pre-built images from GHCR.
+# Requires access to the private ghcr.io/jeremycaine/acme-solid and
+# ghcr.io/jeremycaine/acme-idp packages — see README.md.
+#
+# Start (HTTP, default):  podman compose up -d
+# Add HTTPS (optional):   podman compose --profile https -f docker-compose.yml -f docker-compose.local-https.yml up -d
+
+services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -s3.port=8333 -dir=/data -master.volumeSizeLimitMB=100
+    ports:
+      - "9333:9333"
+      - "8080:8080"
+      - "8333:8333"
+    volumes:
+      - seaweedfs_data:/data
+    healthcheck:
+      disable: true
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: acme_idp
+      POSTGRES_USER: acme
+      POSTGRES_PASSWORD: acme
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acme -d acme_idp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  acme-idp:
+    image: ghcr.io/jeremycaine/acme-idp:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://acme:acme@postgres:5432/acme_idp
+      ISSUER: ${ISSUER:-http://server:4000}
+      RESOURCE_SERVER_URL: ${RESOURCE_SERVER_URL:-http://server:3000}
+      PORT: 4000
+      NODE_ENV: production
+      OIDC_JWKS: ${OIDC_JWKS}
+      COOKIE_SECRETS: ${COOKIE_SECRETS:-dev-secret-change-in-production}
+      SEED_TEST_ACCOUNTS: ${SEED_TEST_ACCOUNTS:-}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    networks:
+      default:
+        aliases:
+          - server
+
+  acme-solid:
+    image: ghcr.io/jeremycaine/acme-solid:latest
+    depends_on:
+      seaweedfs:
+        condition: service_started
+      valkey:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      BUCKET: ${BUCKET:-acme-quickstart}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-any}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-any}
+      S3_ENDPOINT: http://seaweedfs:8333
+      BASE_URL: ${BASE_URL:-http://server:3000}
+      SERVER_OWNER_WEBID: ${SERVER_OWNER_WEBID:-}
+      PORT: ${PORT:-3000}
+      RUST_LOG: ${RUST_LOG:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      VALKEY_URL: ${VALKEY_URL:-redis://valkey:6379}
+      TRUSTED_ISSUERS: ${TRUSTED_ISSUERS:-http://server:4000}
+    healthcheck:
+      disable: true
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["https"]
+    depends_on:
+      acme-solid:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.local-https:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  seaweedfs_data:
+  postgres_data:
+  caddy_data:
+  caddy_config:
